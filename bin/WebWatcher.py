@@ -129,7 +129,6 @@ def tokens_from_url(url):
     original URL.
     """
     hash = hashlib.md5(url.encode('ascii')).hexdigest()[:16]
-
     srch = re.search(REGEX_DOMAIN, url)
 
     return {
@@ -141,9 +140,35 @@ def tokens_from_url(url):
 
 def download(url, dest_path):
     """
-    Given URL and the destination download directoryr, download into that destination filename path.
+    Given URL and the destination download directory, download into that destination filename path.
     """
     wget.download(url, out=dest_path)
+
+
+def reduce_html_to_body(path):
+    """
+    Given file path to html, reduce to only the contained chars inside <body>
+    """
+    body = False
+    f = open(path)
+    tmp_path = f'{path}_tmp'
+    out = open(tmp_path, 'w')
+
+    for l in f:
+        if '<body>' in l:
+            l = l.split('<body>')[1]
+            body = True
+        elif '</body>' in l:
+            l = l.split('</body>')[0]
+
+        if body:
+            out.write(l)
+
+        if '</body>' in l:
+            body = False
+
+    out.close()
+    shutil.move(tmp_path, path)
 
 
 def get_diff(old, new):
@@ -186,6 +211,7 @@ def main():
 
     dest_path = make_dir(url)
     download(url, dest_path)
+    reduce_html_to_body(path=dest_path)
 
     if not last_path:
         print('Aborting as no comparison available, downloading only')
